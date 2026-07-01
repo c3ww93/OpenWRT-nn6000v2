@@ -2,13 +2,12 @@
 . $(dirname "$(realpath "$0")")/function.sh
 #移除luci-app-attendedsysupgrade
 sed -i "/attendedsysupgrade/d" $(find ./feeds/luci/collections/ -type f -name "Makefile")
-#修改默认主题
-sed -i "s/luci-theme-bootstrap/luci-theme-$WRT_THEME/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+#强制修改默认主题为argon
+sed -i "s/luci-theme-[a-zA-Z0-9_-]*/luci-theme-argon/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 #修改immortalwrt.lan关联IP
 sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $(find ./feeds/luci/modules/luci-mod-system/ -type f -name "flash.js")
 #添加编译日期标识
 sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ DaeWRT-$WRT_DATE')/g" $(find ./feeds/luci/modules/luci-mod-status/ -type f -name "10_system.js")
-
 WIFI_SH=$(find ./target/linux/{mediatek/filogic,qualcommax}/base-files/etc/uci-defaults/ -type f -name "*set-wireless.sh" 2>/dev/null)
 WIFI_UC="./package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc"
 if [ -f "$WIFI_SH" ]; then
@@ -26,29 +25,24 @@ elif [ -f "$WIFI_UC" ]; then
 	#修改WIFI加密
 	sed -i "s/encryption='.*'/encryption='psk2+ccmp'/g" $WIFI_UC
 fi
-
 CFG_FILE="./package/base-files/files/bin/config_generate"
 #修改默认IP地址
 sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $CFG_FILE
 #修改默认主机名
 sed -i "s/hostname='.*'/hostname='$WRT_NAME'/g" $CFG_FILE
-
 vlmcsd_patches="./feeds/packages/net/vlmcsd/patches/"
 mkdir -p $vlmcsd_patches && cp -f ../patches/001-fix_compile_with_ccache.patch $vlmcsd_patches
-
 sed -i 's/mirrors.vsean.net\/openwrt/mirror.nju.edu.cn\/immortalwrt/g' ./package/emortal/default-settings/files/99-default-settings-chinese
-
 #配置文件修改
 echo "CONFIG_PACKAGE_luci=y" >> ./.config
 echo "CONFIG_LUCI_LANG_zh_Hans=y" >> ./.config
-echo "CONFIG_PACKAGE_luci-theme-$WRT_THEME=y" >> ./.config
-#echo "CONFIG_PACKAGE_luci-app-$WRT_THEME-config=y" >> ./.config
-
+#强制使用argon主题
+echo "CONFIG_PACKAGE_luci-theme-argon=y" >> ./.config
+echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> ./.config
 #手动调整的插件
 if [ -n "$WRT_PACKAGE" ]; then
 	echo -e "$WRT_PACKAGE" >> ./.config
 fi
-
 #高通平台调整
 DTS_PATH="./target/linux/qualcommax/dts/"
 if [[ "${WRT_TARGET^^}" == *"QUALCOMMAX"* ]]; then
